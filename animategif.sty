@@ -1,0 +1,51 @@
+% animategif.sty: embed animated GIF files directly, \animategif[<opts>]{<file.gif>}.
+% The GIF is decoded by animategif.lua (pure Lua, no external tools) into
+% cached PNG frames under animategif-cache/, then handed to `animate'.
+% <opts> are `animate' options (width, controls, poster, ...); the defaults
+% autoplay and, for looping GIFs, loop can be turned off with autoplay=false
+% and loop=false.
+% Engines: LuaLaTeX natively; pdfLaTeX with -shell-escape (runs texlua).
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{animategif}[2026/10/06 v0.1 Embed animated GIFs via animate]
+\RequirePackage{animate}
+\RequirePackage{iftex}
+\RequirePackage{pdftexcmds}
+
+\ifluatex
+  \directlua{animategif = require("animategif")}
+\fi
+
+\def\agif@strip#1 \@nil{\def\agif@lua{#1}}
+
+\newcommand\animategif[2][]{%
+  \begingroup
+  \edef\agif@file{#2}%
+  \ifluatex
+    \directlua{animategif.prepare("\luaescapestring{\agif@file}")}%
+  \else
+    \ifnum\pdf@shellescape=\@ne
+      \IfFileExists{animategif.lua}{%
+        \expandafter\agif@strip\@filef@und\@nil
+        \immediate\write18{texlua "\agif@lua" "\agif@file"}%
+      }{\PackageError{animategif}{animategif.lua not found}{}}%
+    \else
+      \PackageError{animategif}{%
+        Decoding `\agif@file' needs LuaLaTeX,\MessageBreak
+        or pdfLaTeX run with -shell-escape}{}%
+    \fi
+  \fi
+  \let\agif@src\relax
+  \InputIfFileExists{animategif-cache/last.tex}{}{}%
+  \ifnum\pdf@strcmp{\agif@src}{\agif@file}=\z@
+    \edef\agif@do{%
+      \noexpand\animategraphics[autoplay,loop=\agif@loop,
+        \ifx\agif@timeline\@empty\else timeline=\agif@timeline,\fi
+        \unexpanded{#1}]%
+        {\agif@fps}{\agif@prefix}{0}{\agif@last}}%
+    \agif@do
+  \else
+    \PackageError{animategif}{Could not decode `\agif@file'}{}%
+  \fi
+  \endgroup
+}
+\endinput
