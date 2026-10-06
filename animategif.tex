@@ -1,0 +1,260 @@
+% animategif.tex -- documentation of the animategif package
+% Copyright (C) 2026 Ali Ramlaoui; LPPL 1.3c or later. Typeset with LuaLaTeX.
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{fontspec}
+\usepackage{booktabs,array,tabularx,enumitem,xcolor}
+\usepackage{animategif}
+\usepackage[hidelinks]{hyperref}
+
+\newcommand\pkg[1]{\textsf{#1}}
+\newcommand\opt[1]{\texttt{#1}}
+\newcommand\cs[1]{\texttt{\textbackslash #1}}
+\newcommand\meta[1]{\textlangle\textit{#1}\textrangle}
+\usepackage{fancyvrb}
+\DefineVerbatimEnvironment{code}{Verbatim}{fontsize=\small,xleftmargin=1.5em}
+\setlength\parindent{0pt}
+\setlength\parskip{0.5\baselineskip}
+\emergencystretch=3em
+
+\title{The \pkg{animategif} package\\[0.3em]
+  \large Animated GIFs in PDF documents, straight from the \texttt{.gif} file}
+\author{Ali Ramlaoui\\\url{https://github.com/Ramlaoui/animategif}}
+\date{Version 1.0.0, 2026-10-06}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\pkg{animategif} lets you write \cs{animategif\{movie.gif\}} and get the
+animation in your PDF. It decodes the GIF itself, in pure Lua, and hands the
+frames to the \pkg{animate} package. No ImageMagick or other external
+programs, and no frame extraction by hand. It honours frame delays, disposal
+methods, transparency, interlacing and loop counts, encodes frames as
+compact PNGs, stores only the pixels that change between frames, and caches
+the result.
+\end{abstract}
+
+\section{Quick start}
+
+\begin{code}
+\documentclass{article}
+\usepackage{animategif}
+\begin{document}
+\animategif[width=6cm]{animategif-demo}   % .gif is optional
+\end{document}
+\end{code}
+
+Compile with \texttt{lualatex}, or with \texttt{pdflatex -shell-escape} or
+\texttt{xelatex -shell-escape}. Here is the result. In a viewer that plays
+\pkg{animate} animations (see §\ref{sec:viewers}) the circle moves. Elsewhere
+you see the first frame.
+
+\begin{center}
+\animategif[width=6cm,controls]{animategif-demo}
+\end{center}
+
+\section{What it does, and what it does not}
+\label{sec:viewers}
+
+PDF has no animated image type, so every animated PDF relies on the
+viewer's JavaScript. \pkg{animate} builds the animation from a sequence of
+images that it switches with JavaScript, and \pkg{animategif} supplies those
+images from a GIF. The animations therefore play in the same viewers as any
+\pkg{animate} animation: Adobe Acrobat/Reader, KDE Okular, PDF-XChange and
+Foxit Reader. Other viewers (Apple Preview, Skim, and the built-in viewers of
+web browsers) show a still poster frame, by default the first one; choose
+another with \pkg{animate}'s \opt{poster} option, e.g.\
+\opt{poster=last}.
+
+Without \pkg{animategif}, the usual route is to extract the frames with an
+external program (\texttt{magick in.gif -coalesce frame-\%d.png}), work out
+the frame rate, and call \cs{animategraphics}. \pkg{animategif} does all of
+this inside the TeX run. It also respects per-frame delays, which a single
+frame rate cannot, and stores much smaller frames.
+
+\section{Engines and the cache}
+
+The decoder is the Lua module \texttt{animategif.lua}.
+\begin{itemize}[nosep]
+\item \textbf{LuaLaTeX} runs it in-process. Nothing else is needed.
+\item \textbf{pdfLaTeX and XeLaTeX} run it as
+  \texttt{texlua animategif.lua \ldots} through shell escape, so they need
+  \texttt{-shell-escape}. Restricted shell escape (the TeX Live default) is
+  not enough.
+\end{itemize}
+
+Decoded frames are written to \texttt{animategif-cache/\meta{name}-\meta{hash}/\meta{settings}/}
+where \meta{hash} identifies the GIF's contents. Later runs reuse the cache,
+and changing the GIF or the frame options (\opt{frames}, \opt{step},
+\opt{optimize}, \opt{keyframe}, \opt{downsample}) decodes it again. Options
+such as \opt{speed}, \opt{fps}, \opt{plays} or any \pkg{animate} option take
+effect without decoding again.
+
+Because the cache is plain files, a document whose cache exists compiles with
+any engine and \emph{without} shell escape. This is useful for journals,
+arXiv or co-authors: compile once with LuaLaTeX and ship the
+\texttt{animategif-cache} directory with the sources. If a GIF is not in the
+cache and cannot be decoded, the error message gives the command that fills
+the cache, which you can also run yourself:
+
+\begin{code}
+texlua $(kpsewhich animategif.lua) frames movie.gif <dir> [key=value ...]
+\end{code}
+
+Delete \texttt{animategif-cache} at any time to reclaim space, and add it to
+\texttt{.gitignore} unless you want to ship it.
+
+\section{Options}
+
+Options are given to \cs{animategif}, to the package, or to
+\cs{animategifsetup\{\meta{options}\}}, which sets them for the rest of the
+current group. Any option that
+\pkg{animategif} does not know is passed to \pkg{animate}. That includes
+\opt{width}, \opt{height}, \opt{scale}, \opt{controls}, \opt{poster},
+\opt{palindrome}, \opt{autopause}, \opt{autoresume}, \opt{method} and
+\opt{alttext}; see the \pkg{animate} manual. Frames are numbered from~0, as
+in \pkg{animate}.
+
+\smallskip
+\begin{tabularx}{\linewidth}{@{}>{\ttfamily}l>{\raggedright\ttfamily}p{2.2cm}X@{}}
+\toprule
+\normalfont Option & \normalfont Default & Meaning \\
+\midrule
+frames=\meta{a}-\meta{b} & 0- & Only use frames \meta{a} to \meta{b}.
+  \opt{\meta{a}-} runs to the end, \opt{-\meta{b}} starts at the beginning,
+  and \opt{\meta{n}} is a single frame. \\
+step=\meta{n} & 1 & Keep every \meta{n}th frame of the range. A dropped
+  frame's delay goes to the kept frame before it, so the timing is
+  unchanged. \\
+speed=\meta{factor} & 1 & Play faster (\opt{2}) or slower (\opt{0.5}). \\
+fps=\meta{rate} & & Ignore the GIF's delays and play at a constant frame
+  rate (times \opt{speed}). \\
+plays=\meta{n} & auto & How many times to play: \opt{auto} follows the GIF's
+  loop count (as browsers do), \opt{forever} loops, and a number plays that
+  many times and stops on the last frame. \\
+still[=\meta{frame}] & false & Include one frame as an ordinary image
+  instead of an animation: \opt{first}, \opt{last} or a frame number. Of the
+  options, only \opt{width}, \opt{height}, \opt{scale}, \opt{angle},
+  \opt{trim}, \opt{clip} and the like are used. \\
+handout=still\textbar animate & still & In beamer's handout mode, GIFs are
+  included as still images unless \opt{handout=animate}. \\
+label=\meta{name} & & Name for \pkg{animate}'s JavaScript interface
+  (\texttt{anim['\meta{name}']}), e.g.\ to control playback with buttons. \\
+downsample=\meta{n} & 1 & Reduce the resolution by an integer factor,
+  averaging $n\times n$ blocks. This shrinks big GIFs a lot. \\
+optimize=\meta{bool} & true & Store only the pixels that change between
+  frames, stacked on the previous ones (see §\ref{sec:impl}). \opt{false}
+  stores every frame in full. \\
+keyframe=\meta{n} & 30 & With \opt{optimize}, store a full frame at least
+  every \meta{n} frames. \\
+cachedir=\meta{dir} & animategif-\allowbreak cache & Where decoded frames go. \\
+\bottomrule
+\end{tabularx}
+
+\section{Examples}
+
+\begin{code}
+% half speed, with a control bar, last frame as the poster for other viewers
+\animategif[speed=0.5, controls, poster=last]{demo}
+
+% frames 10 to 40, every other one, played three times
+\animategif[frames=10-40, step=2, plays=3, width=\linewidth]{demo}
+
+% a big screen recording at half resolution
+\animategif[downsample=2, width=\textwidth]{recording}
+
+% the final state, as a plain image (e.g. for print)
+\animategif[still=last, width=4cm]{demo}
+
+% all GIFs as still images, e.g. for a printed version
+\animategifsetup{still}
+\end{code}
+
+Three of these, each with \opt{width=3.5cm}: \opt{speed=0.5}, \opt{frames=4-11}
+with \opt{plays=2}, and \opt{still=last}:
+
+\begin{center}
+\animategif[width=3.5cm,speed=0.5]{animategif-demo}\hfill
+\animategif[width=3.5cm,frames=4-11,plays=2]{animategif-demo}\hfill
+\animategif[width=3.5cm,still=last]{animategif-demo}
+\end{center}
+
+In \pkg{beamer}, \cs{animategif} works like any \pkg{animate} animation.
+The \pkg{animate} manual explains how to combine animations with overlays.
+
+\section{The command-line tool}
+
+\texttt{animategif.lua} also works on its own with \texttt{texlua}:
+
+\begin{code}
+texlua animategif.lua info movie.gif
+texlua animategif.lua frames movie.gif <dir> [key=value ...]
+texlua animategif.lua still movie.gif <dir> [frame=<n>] [downsample=<n>]
+\end{code}
+
+\texttt{info} prints the size, the number of frames, the duration and the
+loop count. \texttt{frames} writes what \cs{animategif} uses: the PNG
+images and \texttt{info.tex}. It takes \opt{optimize}, \opt{keyframe},
+\opt{first}, \opt{last}, \opt{step} and \opt{downsample}. \texttt{still}
+writes one composited frame; a negative \opt{frame} counts from the end.
+Set the environment variable \texttt{ANIMATEGIF\_PROFILE=1} to see where the
+time goes.
+
+\section{How it works}
+\label{sec:impl}
+
+The decoder reads the GIF stream and decompresses the LZW image data. It
+composites each frame onto a canvas the size of the logical screen,
+following the frame's disposal method (keep, restore to background, restore
+to previous), its transparent colour, interlacing, and local or global
+palettes. Frames that extend past the logical screen are clipped. Delays of
+0 or 1 hundredths of a second are played at 10, as browsers do. A GIF without
+a loop extension plays once. A loop count of \meta{n} plays $n+1$ times, and
+0 loops forever.
+
+Each frame is written as a PNG. The PNG is indexed (one byte per pixel) when
+the frame has at most 256 colours, as GIF frames do, and RGB(A) otherwise.
+
+With \opt{optimize}, a frame stores only the pixels that differ from the
+previous frame. The others are transparent, and \pkg{animate}'s timeline
+stacks these delta images on the last full frame. Full keyframes are written
+for the first frame, after \opt{keyframe} frames, when pixels become
+transparent (a delta can only paint), and whenever a delta would not be
+clearly smaller. Identical consecutive frames cost nothing. Around the
+changed pixels, the transparent pixels carry the colour that shows through
+them, so that viewers which smooth downscaled images do not draw seams at
+the edges of the changes.
+
+\pkg{animategif} then writes an \pkg{animate} timeline that gives each frame
+its own duration and stacks the delta images, and calls
+\cs{animategraphics} with it. A finite number of plays is written into the
+timeline as repeats of the frame sequence. The images are shared, so this
+costs almost nothing, and playback stops on the last frame without
+JavaScript tricks.
+
+\section{Limitations}
+
+\begin{itemize}[nosep]
+\item Animations need a JavaScript-capable viewer (§\ref{sec:viewers}).
+\item Every distinct frame is an image in the PDF. Long or large GIFs make
+  big PDFs. \opt{frames}, \opt{step} and \opt{downsample} help.
+\item Decoding is pure Lua: roughly a second per 5 million pixels of
+  animation. It happens once per GIF and settings, thanks to the cache.
+\item pdfLaTeX and XeLaTeX need unrestricted shell escape, or a filled cache.
+\end{itemize}
+
+\section{License}
+
+Copyright \copyright\ 2026 Ali Ramlaoui. This work may be distributed and/or
+modified under the conditions of the \LaTeX\ Project Public License, version
+1.3c or later. It has the LPPL maintenance status ``maintained''. Bug reports
+and contributions are welcome at \url{https://github.com/Ramlaoui/animategif}.
+
+\section{Change history}
+
+\begin{description}[nosep,font=\normalfont\ttfamily]
+\item[1.0.0 (2026-10-06)] First public release.
+\end{description}
+
+\end{document}

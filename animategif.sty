@@ -29,13 +29,14 @@
   {
     Cannot~decode~`#1'~with~this~engine~and~settings.\\
     Use~LuaLaTeX,~or~enable~shell~escape~(-shell-escape),~or~fill~the~cache~
-    once~by~running:\\\\
-    texlua~animategif.lua~#2
+    once~by~running~in~the~document~directory:\\\\
+    texlua~<path~of~animategif.lua>~#2
   }
   {
     pdfLaTeX~and~XeLaTeX~decode~GIFs~by~running~texlua~through~shell~escape.~
-    Once~the~cache~exists~(for~example~committed~or~uploaded~with~the~
-    document),~no~decoder~is~needed.
+    `kpsewhich~animategif.lua'~prints~the~path~of~the~decoder.~Once~the~
+    cache~exists~(for~example~committed~or~uploaded~with~the~document),~no~
+    decoder~is~needed.
   }
 \msg_new:nnn { animategif } { failed }
   { Decoding~`#1'~failed;~see~the~messages~above. }
