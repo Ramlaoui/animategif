@@ -9,3 +9,4 @@ build/
 *.synctex.gz
 animategif.pdf
 *.zip
+*.curlopt
