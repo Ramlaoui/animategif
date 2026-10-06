@@ -1,5 +1,10 @@
 # animategif — animated GIFs in PDF documents
 
+![A beamer slide in which \animategif plays a matplotlib animation of gradient descent](https://raw.githubusercontent.com/Ramlaoui/animategif/main/docs/hero.gif)
+
+<sub>Every frame above is a page of a real beamer PDF, rendered by poppler
+(source: [`docs/hero`](https://github.com/Ramlaoui/animategif/tree/main/docs/hero)).</sub>
+
 ```latex
 \usepackage{animategif}
 ...

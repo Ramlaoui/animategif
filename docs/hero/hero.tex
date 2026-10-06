@@ -1,0 +1,32 @@
+% README hero: one page per GIF frame (animate's poster=<k>), so every frame
+% of hero.gif is the animation as the PDF itself shows it. Built by make.sh.
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage{animategif,pgffor}
+\setbeamertemplate{navigation symbols}{}
+\definecolor{ink}{HTML}{1F2937}
+\definecolor{accent}{HTML}{E0464B}
+\definecolor{paper}{HTML}{F3F4F6}
+\setbeamercolor{frametitle}{fg=ink}
+\setbeamercolor{normal text}{fg=ink}
+\newcommand\heroslide[1]{%
+  \begin{frame}{Training dynamics}
+    \begin{columns}[c]
+      \begin{column}{0.42\textwidth}
+        \small Momentum overshoots, then settles in the valley.\par\bigskip
+        \colorbox{paper}{\parbox{0.92\linewidth}{\ttfamily\footnotesize
+          \textcolor{accent}{\textbackslash usepackage}\{animategif\}\\[0.6em]
+          \textcolor{accent}{\textbackslash animategif}[\\
+          \hspace*{1.2em}width=\textbackslash linewidth\\
+          ]\{descent.gif\}}}\par\bigskip
+        \scriptsize\color{ink!60} No ImageMagick. No frame extraction.\\
+        Just the \texttt{.gif}.
+      \end{column}
+      \begin{column}{0.54\textwidth}
+        \animategif[width=\linewidth, poster=#1]{descent}
+      \end{column}
+    \end{columns}
+  \end{frame}}
+\begin{document}
+\edef\lastk{\the\numexpr\heroframes-1}
+\foreach \k in {0,...,\lastk} {\heroslide{\k}}
+\end{document}
