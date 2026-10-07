@@ -1,5 +1,7 @@
 # animategif — animated GIFs in PDF documents
 
+[![CTAN](https://img.shields.io/ctan/v/animategif)](https://ctan.org/pkg/animategif)
+
 ![A beamer slide in which \animategif plays a matplotlib animation of gradient descent](https://raw.githubusercontent.com/Ramlaoui/animategif/main/docs/hero.gif)
 
 <sub>Every frame above is a page of a real beamer PDF, rendered by poppler
@@ -45,14 +47,18 @@ a poster frame (the first frame by default, or set `poster=last`).
 
 ## Installation
 
-Once the package is on CTAN, TeX Live and MiKTeX will install it. Until then,
-put `animategif.sty` and `animategif.lua` next to your document, or install
-them into your TEXMF tree with `l3build install`.
+animategif is [on CTAN](https://ctan.org/pkg/animategif) and in TeX Live 2026:
+`tlmgr install animategif`. MiKTeX takes packages from CTAN too.
+
+Where your TeX distribution does not have it yet, as on Overleaf until its
+TeX Live 2027 update, put `animategif.sty` and `animategif.lua` next to your
+document (and on Overleaf, set the compiler to LuaLaTeX). From a clone of this
+repository, `l3build install` installs them into your TEXMF tree.
 
 ## Documentation
 
-See [animategif.pdf](https://github.com/Ramlaoui/animategif/releases) or build
-it with `l3build doc`. `texlua animategif.lua info movie.gif` prints a GIF's
+See [animategif.pdf](https://mirrors.ctan.org/macros/latex/contrib/animategif/animategif.pdf)
+on CTAN (or `texdoc animategif`), or build it with `l3build doc`. `texlua animategif.lua info movie.gif` prints a GIF's
 size, frame count, duration and loop count.
 
 ## Development
